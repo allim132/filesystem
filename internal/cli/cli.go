@@ -31,6 +31,7 @@ func (c *CLI) Run() {
 
         switch args[0] {
         case "createfs":
+            fmt.Print("")
             // Handle createfs command
         case "formatfs":
             // Handle formatfs command

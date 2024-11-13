@@ -35,7 +35,7 @@ func FormatFS(fs *FileSystem, numFilenames, numDABPTEntries int) error {
 	// Validate input paramaters
     totalMetaBlocks := (numFilenames + 3) / 4 + (numDABPTEntries + 3) / 4 // 4 entries per block
     if (totalMetaBlocks > fs.TotalBlocks) {
-        return fmt.Errorf("Not enough blocks for %d filenames and %d DABPT entries", numFilenames, numDABPTEntries)
+        return fmt.Errorf("not enough blocks for %d filenames and %d DABPT entries", numFilenames, numDABPTEntries)
     }
     
     // Set up FNT
@@ -93,7 +93,7 @@ func SaveFS(fs *FileSystem, name string) error {
     for entry := range fs.FNT {
         err := binary.Write(file, binary.LittleEndian, entry);
         if err != nil {
-            return fmt.Errorf("Failed to write FNT entry: %v", err)
+            return fmt.Errorf("failed to write FNT entry: %v", err)
         }
     }
 
@@ -101,7 +101,7 @@ func SaveFS(fs *FileSystem, name string) error {
     for _, entry := range fs.DABPT {
         err := binary.Write(file, binary.LittleEndian, entry);
         if err != nil {
-            return fmt.Errorf("Failed to write DABPT entry: %v", err)
+            return fmt.Errorf("failed to write DABPT entry: %v", err)
         }
     }
 
@@ -109,7 +109,7 @@ func SaveFS(fs *FileSystem, name string) error {
     for _, block := range fs.DataBlocks {
         err := binary.Write(file, binary.LittleEndian, block);
         if err != nil {
-            return fmt.Errorf("Failed to write DataBlocks entry: %v", err)
+            return fmt.Errorf("failed to write DataBlocks entry: %v", err)
         }
     }
 
@@ -117,15 +117,70 @@ func SaveFS(fs *FileSystem, name string) error {
     for _, isFree := range fs.FreeBlocks {
         err := binary.Write(file, binary.LittleEndian, isFree);
         if err != nil {
-            return fmt.Errorf("Failed to write FreeBlocks entry: %v", err);
+            return fmt.Errorf("failed to write FreeBlocks entry: %v", err);
         }
     }
 
     return nil;
 }
 
+// Use an existing disk image
 func OpenFS(name string) (*FileSystem, error) {
-	// Implementation
+	// Open file
+    file, err := os.Open(name)
+    if err != nil{
+        return nil, fmt.Errorf("failed to open file: %v", err);
+    }
+    defer file.Close()
+
+    fs := &FileSystem{}
+
+    // Read total number of blocks
+    var totalNumberOfBlocks int32
+    err = binary.Read(file, binary.LittleEndian, &totalNumberOfBlocks)
+    if err != nil{
+        return nil, fmt.Errorf("failed to read total blocks: %v", err)
+    }
+    fs.TotalBlocks = int(totalNumberOfBlocks)
+
+    // Read FNT
+    fs.FNT = make([]FNTEntry, fs.TotalBlocks/4)
+    for i := range fs.FNT {
+        err = binary.Read(file, binary.LittleEndian, &fs.FNT[i])
+        if err != nil {
+            return nil, fmt.Errorf("failed to read FNT: %v", err)
+        }
+    } 
+
+    // Read DABPT
+    fs.DABPT = make([]DABPTEntry, fs.TotalBlocks/4)
+    for i := range fs.DABPT {
+        err = binary.Read(file, binary.LittleEndian, &fs.DABPT[i])
+        if err != nil {
+            return nil, fmt.Errorf("failed to read DABPT entry: %v", err)
+        }
+    }
+
+    // Read DataBlocks
+    fs.DataBlocks = make([][]byte, fs.TotalBlocks /2)
+    for i := range fs.DataBlocks {
+        fs.DataBlocks[i] = make([]byte, BlockSize)
+        _, err = file.Read(fs.DataBlocks[i]) 
+        if err != nil {
+            return nil, fmt.Errorf("failed to read DataBlock entry: %v", err)
+        }
+    }
+
+    // Read FreeBlocks
+    fs.FreeBlocks = make([]bool, fs.TotalBlocks)
+    for i := range fs.FreeBlocks {
+        err = binary.Read(file, binary.LittleEndian, &fs.FreeBlocks[i])
+        if err != nil {
+            return nil, fmt.Errorf("failed to read FreeBlock entry: %v", err)
+        }
+    }
+
+    return fs, nil
 }
 
 // Implement other operations (List, Remove, Rename, Put, Get, User)
