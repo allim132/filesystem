@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/allim132/filesystem/internal/filesystem"
@@ -31,8 +32,22 @@ func (c *CLI) Run() {
 
         switch args[0] {
         case "createfs":
-            fmt.Print("")
             // Handle createfs command
+            fmt.Printf("Creating File System...")
+            fmt.Printf("Enter number of blocks:")
+            input, _ := reader.ReadString('\n')
+            input = strings.TrimSpace(input)
+            number, err := strconv.ParseInt(input, 10, 32)
+            
+            if (err != nil){
+                fmt.Println("Error: Input must be a integer!")
+                continue
+            }
+
+            filesystem.CreateFS(int(number))
+
+            fmt.Printf("File with blocks %d succesfully created!", number)
+            
         case "formatfs":
             // Handle formatfs command
         // Add cases for other commands
