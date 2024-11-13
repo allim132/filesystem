@@ -1,3 +1,3 @@
-module github.com/yourusername/fs-project
+module github.com/allim132/filesystem
 
-go 1.21
+go 1.23.3

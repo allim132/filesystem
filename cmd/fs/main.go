@@ -1,7 +1,7 @@
 package main
 
 import (
-    "cse3320/internal/cli"
+	"github.com/allim132/filesystem/internal/cli"
 )
 
 func main() {

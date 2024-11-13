@@ -3,9 +3,9 @@ package filesystem
 import "time"
 
 const (
-    BlockSize           = 256
-    MaxFilename         = 56
-    MaxUsername         = 40
+    BlockSize            = 256
+    MaxFilename          = 56
+    MaxUsername          = 40
     EntriesPerDABPTBlock = 4
 )
 
@@ -26,4 +26,5 @@ type FileSystem struct {
     DABPT       []DABPTEntry
     DataBlocks  [][]byte
     TotalBlocks int
+    FreeBlocks  []bool
 }

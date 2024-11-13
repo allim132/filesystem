@@ -1,11 +1,12 @@
 package cli
 
 import (
-    "bufio"
-    "fmt"
-    "os"
-    "strings"
-    "your-project/internal/filesystem"
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/allim132/filesystem/internal/filesystem"
 )
 
 type CLI struct {
