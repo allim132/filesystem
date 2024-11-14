@@ -11,7 +11,17 @@ import (
 	"time"
 )
 
-func CreateFS(numBlocks int) *FileSystem {
+func CreateFS(numBlocks int, currentUser string) *FileSystem {
+    // Convert currentUser to bytes
+    var username [MaxUsername]byte
+    copy(username[:], currentUser)
+
+    if len(currentUser) > MaxUsername {
+        username = [MaxUsername]byte{}
+        copy(username[:], currentUser[:MaxUsername])
+    }
+
+
     fs := &FileSystem{
         TotalBlocks: numBlocks,
         FNT:         make([]FNTEntry, 0),  // Will be initialized in FormatFS
@@ -19,6 +29,7 @@ func CreateFS(numBlocks int) *FileSystem {
         DataBlocks:  make([][]byte, numBlocks),
         FreeBlocks:  make([]bool, numBlocks),
         DiskName:    "",  // Will be set when saving or opening a disk image
+        CurrentUser: username, // Set the CurrentUser here
     }
 
     // Initialize all blocks as free initially
@@ -83,6 +94,7 @@ func FormatFS(fs *FileSystem, numFilenames, numDABPTEntries int) error {
 // Save the "Disk" in a file "name"
 func SaveFS(fs *FileSystem, name string) error {
     // Open file
+    fmt.Printf("Attempting to create file with name: %s\n", name)
     file, err := os.Create(name)
     if err != nil {
         return fmt.Errorf("failed to create file: %v", err)
@@ -135,13 +147,13 @@ func SaveFS(fs *FileSystem, name string) error {
         }
     }
 
-    // Write CurrentUser
+    // Set current user to NULL
     _, err = file.Write(fs.CurrentUser[:])
     if err != nil {
         return fmt.Errorf("failed to write CurrentUser: %v", err)
     }
 
-    // Write DiskName
+    // Write current user
     _, err = file.WriteString(fs.DiskName)
     if err != nil {
         return fmt.Errorf("failed to write DiskName: %v", err)
@@ -268,12 +280,18 @@ func ListFS(fs *FileSystem) ([]string, error) {
 }
 // getFreeBlockCount, addToFNT, allocateBlockPointerTable, allocateDataBlock, writeBlock, updateBlockPointerTable, updateDABPT, SaveFs
 func PutFS(fs *FileSystem, externalFileName string) error {
+    // Check if external file exists
+    if _, err := os.Stat(externalFileName); os.IsNotExist(err) {
+        return fmt.Errorf("external file does not exist: %v", err)
+    }
+
     // Open and read the external file
     externalFile, err := os.Open(externalFileName)
     if err != nil {
         return fmt.Errorf("failed to open external file: %v", err)
     }
     defer externalFile.Close()
+
 
     fileInfo, err := externalFile.Stat()
     if err != nil {
@@ -344,7 +362,7 @@ func PutFS(fs *FileSystem, externalFileName string) error {
     }
 
     // Save updated filesystem state
-    err = SaveFS(fs, fs.DiskName)
+    err = SaveFS(fs, externalFileName)
     if err != nil {
         return fmt.Errorf("failed to save updated filesystem state: %v", err)
     }

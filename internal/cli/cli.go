@@ -42,8 +42,15 @@ func (c *CLI) Run() {
 			}
 		case "formatfs":
 			c.formatfs() // Call formatfs method to format file system
-		case "list":
+        case "savefs":
+        case "openfs":
+        case "list":
 			c.listFiles() // Call listFiles method to list files
+        case "remove":
+        case "rename":
+        case "put":
+            c.put(args)
+        case "get":
 		case "quit":
 			return
 		case "exit":
@@ -69,25 +76,30 @@ func listoperations() {
 }
 
 func createfs(reader *bufio.Reader) *filesystem.FileSystem {
-	fmt.Print("Creating File System...\nEnter number of blocks: ")
+	fmt.Print("Enter a name for the disk (e.g., disk01): ")
+	diskName, _ := reader.ReadString('\n')
+	diskName = strings.TrimSpace(diskName)
+
+	fmt.Print("Enter your username: ")
+	currentUser, _ := reader.ReadString('\n')
+	currentUser = strings.TrimSpace(currentUser)
+
+	fmt.Printf("Creating File System...\nEnter number of blocks: ")
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(input)
 	number, err := strconv.ParseInt(input, 10, 32)
 
 	if err != nil {
-		fmt.Println("Error: Input must be an integer!")
-		return nil
+			fmt.Println("Error: Input must be an integer!")
+			return nil
 	}
 
-	fs := filesystem.CreateFS(int(number)) // Call CreateFS and assign to fs
-
-	if fs == nil {
-		fmt.Println("Error creating filesystem.")
-		return nil
-	}
+	// Create the filesystem and set DiskName and CurrentUser
+	fs := filesystem.CreateFS(int(number), currentUser)
+	fs.DiskName = diskName // Optionally set DiskName here
 
 	fmt.Printf("File system with %d blocks successfully created!\n", number)
-	return fs // Return the created filesystem
+	return fs
 }
 
 func (c *CLI) listFiles() {
@@ -143,4 +155,30 @@ func (c *CLI) formatfs() {
     }
 
     fmt.Println("Filesystem formatted successfully.")
+}
+
+func (c *CLI) put(args []string) {
+    // Check if the filesystem is loaded
+    if c.fs == nil {
+        fmt.Println("No filesystem loaded. Please create or open a filesystem first.")
+        return
+    }
+
+    // Check if a filename argument is provided
+    if len(args) < 2 {
+        fmt.Println("Usage: put <filename>")
+        return
+    }
+
+    // Get the external file name from the command arguments
+    externalFileName := args[1]
+
+    // Call PutFS function to store the external file in the filesystem
+    err := filesystem.PutFS(c.fs, externalFileName)
+    if err != nil {
+        fmt.Printf("Failed to put file into filesystem: %v\n", err)
+        return
+    }
+
+    fmt.Println("File successfully stored in the filesystem.")
 }
