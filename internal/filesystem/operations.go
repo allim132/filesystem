@@ -501,3 +501,57 @@ func (fs *FileSystem) updateDABPT(fntIndex int, entry DABPTEntry) error {
     fs.DABPT[fntIndex] = entry
     return nil
 }
+
+func RenameFS(fs *FileSystem, currentFileName string, newFileName string) error {
+    // Convert currentFileName and newFileName to byte
+    /*
+// Convert currentUser to bytes
+    var username [MaxUsername]byte
+    copy(username[:], currentUser)
+
+    if len(currentUser) > MaxUsername {
+        username = [MaxUsername]byte{}
+        copy(username[:], currentUser[:MaxUsername])
+    }
+    */
+
+
+    var currentFileNameBytes [MaxFilename]byte
+    var newFileNameBytes [MaxFilename]byte
+    copy(currentFileNameBytes[:], currentFileName)
+    copy(newFileNameBytes[:], newFileName)
+    if (len(currentFileNameBytes) > MaxFilename) {
+        currentFileNameBytes = [MaxFilename]byte{}
+        copy(currentFileNameBytes[:], currentFileName[:MaxFilename])
+    }
+    if (len(newFileNameBytes) > MaxFilename) {
+        newFileNameBytes = [MaxFilename]byte{}
+        copy(newFileNameBytes[:], newFileName[:MaxFilename])
+    }
+
+    // Check if the new filename already exists (case-sensitive)
+    for _, entry := range fs.FNT {
+        if entry.Filename == newFileNameBytes {
+            return fmt.Errorf("file with name '%s' already exists", newFileName)
+        }
+    }
+
+    // Find the index of the current file in FNT
+    var fntIndex int = -1
+    for i, entry := range fs.FNT {
+        if entry.Filename == currentFileNameBytes {
+            fntIndex = i
+            break
+        }
+    }
+
+    // If file not found, return an error
+    if fntIndex == -1 {
+        return fmt.Errorf("file '%s' not found in filesystem", currentFileName)
+    }
+
+    // Update the filename in FNT
+    fs.FNT[fntIndex].Filename = newFileNameBytes
+
+    return nil
+}

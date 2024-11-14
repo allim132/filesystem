@@ -247,7 +247,7 @@ func (c *CLI) openfs(args []string) {
 	fileName := args[1]
 	
 	// Call OpenFS function to open the file system
-	fmt.Printf("Trying to open file system: %s\n", fileNameo)
+	fmt.Printf("Trying to open file system: %s\n", fileName)
 	fs, err := filesystem.OpenFS(fileName)
 	if err != nil {
 		fmt.Printf("Failed to open file system: %v\n", err)
