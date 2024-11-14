@@ -419,16 +419,29 @@ func (fs *FileSystem) updateBlockPointerTable(bptIndex, entryIndex, blockIndex i
     if bptIndex < 0 || bptIndex >= len(fs.DataBlocks) {
         return fmt.Errorf("invalid BPT index")
     }
+
+    // Calculate entry offset
     entryOffset := 4 + (entryIndex % 7) * 4
-    binary.LittleEndian.PutUint32(fs.DataBlocks[bptIndex][entryOffset:], uint32(blockIndex))
-    if entryIndex % 7 == 6 && entryIndex+1 < binary.LittleEndian.Uint32(fs.DataBlocks[bptIndex]) {
-        // Set chaining pointer
-        nextBPTIndex, err := fs.allocateBlockPointerTable((entryIndex + 1) / 7)
-        if err != nil {
-            return err
-        }
-        binary.LittleEndian.PutUint32(fs.DataBlocks[bptIndex][32:], uint32(nextBPTIndex))
+    if entryOffset+4 > len(fs.DataBlocks[bptIndex]) {
+        return fmt.Errorf("entry offset out of bounds")
     }
+
+    // Write block index to the specified offset
+    binary.LittleEndian.PutUint32(fs.DataBlocks[bptIndex][entryOffset:], uint32(blockIndex))
+
+    // Check if we need to set a chaining pointer
+    if entryIndex%7 == 6 { // If this is the last pointer in the group
+        nextBPTCount := binary.LittleEndian.Uint32(fs.DataBlocks[bptIndex][:4]) // Assuming first 4 bytes store count
+        if entryIndex/7+1 < int(nextBPTCount) { // Check if there are more entries needed
+            nextBPTIndex, err := fs.allocateBlockPointerTable((entryIndex + 1) / 7)
+            if err != nil {
+                return err
+            }
+            // Set chaining pointer at the end of current block pointer table
+            binary.LittleEndian.PutUint32(fs.DataBlocks[bptIndex][32:], uint32(nextBPTIndex))
+        }
+    }
+
     return nil
 }
 
