@@ -45,11 +45,13 @@ func (c *CLI) Run() {
 		case "savefs":
 			c.savefs(args)
 		case "openfs":
+			c.openfs(args)
 		case "list":
 			c.listFiles() // Call listFiles method to list files
 		case "remove":
 			c.remove(args)
 		case "rename":
+			c.rename(args)
 		case "put":
 			c.put(args)
 		case "get":
@@ -69,7 +71,7 @@ func listoperations() {
 	fmt.Println("createfs - Create file system")
 	fmt.Println("formatfs - Format file system")
 	fmt.Println("savefs - Save file system")
-	fmt.Println("openfs - Open existing file system")
+	fmt.Println("openfs (diskname) - Open existing file system")
 	fmt.Println("list - List files")
 	fmt.Println("remove (name) - Removes given file")
 	fmt.Println("rename (currentname) (newname) - Renames a given file")
@@ -226,4 +228,59 @@ func (c *CLI) savefs(args []string) {
 	}
 	
 	fmt.Println("File system successfully saved.")
+}
+
+func (c *CLI) openfs(args []string) {
+	// Check if the filesystem is loaded
+	if c.fs != nil {
+		fmt.Println("File system already loaded. Please close the current file system first.")
+		return
+	}
+	
+	// Check if a filename argument is provided
+	if len(args) < 2 {
+		fmt.Println("Usage: openfs <filename>")
+		return
+	}
+	
+	// Get the file name from the command arguments
+	fileName := args[1]
+	
+	// Call OpenFS function to open the file system
+	fmt.Printf("Trying to open file system: %s\n", fileNameo)
+	fs, err := filesystem.OpenFS(fileName)
+	if err != nil {
+		fmt.Printf("Failed to open file system: %v\n", err)
+		return
+	}
+
+	c.fs = fs
+	fmt.Println("File system successfully opened.")
+}
+
+func (c *CLI) rename(args []string) {
+	// Check if the filesystem is loaded
+	if c.fs == nil {
+		fmt.Println("No filesystem loaded. Please create or open a filesystem first.")
+		return
+	}
+	
+	// Check if a filename argument is provided
+	if len(args) < 3 {
+		fmt.Println("Usage: rename <currentfilename> <newfilename>")
+		return
+	}
+	
+	// Get the current file name and new file name from the command arguments
+	currentFileName := args[1]
+	newFileName := args[2]
+	
+	// Call RenameFS function to rename the internal file in the filesystem
+	err := filesystem.RenameFS(c.fs, currentFileName, newFileName)
+	if err != nil {
+		fmt.Printf("Failed to rename file in filesystem: %v\n", err)
+		return
+	}
+	
+	fmt.Println("File successfully renamed in the filesystem.")
 }
