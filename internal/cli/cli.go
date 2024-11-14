@@ -41,8 +41,7 @@ func (c *CLI) Run() {
 				fmt.Println("File system created successfully.")
 			}
 		case "formatfs":
-			// Handle formatfs command
-			fmt.Println("Format FS command not implemented yet.")
+			c.formatfs() // Call formatfs method to format file system
 		case "list":
 			c.listFiles() // Call listFiles method to list files
 		case "quit":
@@ -91,7 +90,6 @@ func createfs(reader *bufio.Reader) *filesystem.FileSystem {
 	return fs // Return the created filesystem
 }
 
-// Implement listFiles method to list files in the filesystem
 func (c *CLI) listFiles() {
 	if c.fs == nil {
 		fmt.Println("No filesystem created. Please create one first.")
@@ -113,5 +111,43 @@ func (c *CLI) listFiles() {
     } else {
         fmt.Println("File system is empty!")
     }
-	
+}
+
+func (c *CLI) formatfs() {
+    // Check if the filesystem is loaded
+    if c.fs == nil {
+        fmt.Println("No filesystem loaded. Please create or open a filesystem first.")
+        return
+    }
+
+    // Get total number of blocks from the filesystem
+    totalBlocks := c.fs.TotalBlocks
+
+    // Prompt user for number of entries (for both FNT and DABPT)
+    fmt.Printf("Enter number of entries (for filenames and DABPT). Max number of entries is %d: ", totalBlocks)
+    
+    reader := bufio.NewReader(os.Stdin)
+    inputEntries, _ := reader.ReadString('\n')
+    inputEntries = strings.TrimSpace(inputEntries)
+    numEntries, err := strconv.Atoi(inputEntries)
+    if err != nil || numEntries <= 0 || numEntries > totalBlocks {
+        fmt.Println("Invalid input for number of entries. Please enter a positive integer within the limit.")
+        return
+    }
+
+    // Call FormatFS function to format the filesystem
+    err = filesystem.FormatFS(c.fs, numEntries, numEntries) // Same number for both FNT and DABPT
+    if err != nil {
+        fmt.Printf("Failed to format filesystem: %v\n", err)
+        return
+    }
+
+    fmt.Println("Filesystem formatted successfully.")
+}
+
+func min(a, b int) int {
+    if a < b {
+        return a
+    }
+    return b
 }
