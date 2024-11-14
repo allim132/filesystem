@@ -42,15 +42,17 @@ func (c *CLI) Run() {
 			}
 		case "formatfs":
 			c.formatfs() // Call formatfs method to format file system
-        case "savefs":
-        case "openfs":
-        case "list":
+		case "savefs":
+			c.savefs(args)
+		case "openfs":
+		case "list":
 			c.listFiles() // Call listFiles method to list files
-        case "remove":
-        case "rename":
-        case "put":
-            c.put(args)
-        case "get":
+		case "remove":
+			c.remove(args)
+		case "rename":
+		case "put":
+			c.put(args)
+		case "get":
 		case "quit":
 			return
 		case "exit":
@@ -181,4 +183,47 @@ func (c *CLI) put(args []string) {
     }
 
     fmt.Println("File successfully stored in the filesystem.")
+}
+
+func (c *CLI) remove(args []string) {
+	// Check if the filesystem is loaded
+	if c.fs == nil {
+		fmt.Println("No filesystem loaded. Please create or open a filesystem first.")
+		return
+	}
+	
+	// Check if a filename argument is provided
+	if len(args) < 2 {
+		fmt.Println("Usage: remove <filename>")
+		return
+	}
+
+	// Get the internal file name from the command arguments
+	internalFileName := args[1]
+	
+	// Call RemoveFS function to remove the internal file from the filesystem
+	err := filesystem.RemoveFS(c.fs, internalFileName)
+	if err != nil {
+		fmt.Printf("Failed to remove file from filesystem: %v\n", err)
+		return
+	}
+	
+	fmt.Println("File successfully removed from the filesystem.")
+}
+
+func (c *CLI) savefs(args []string) {
+	// Check if the filesystem is loaded
+	if c.fs == nil {
+		fmt.Println("No filesystem loaded. Please create or open a filesystem first.")
+		return
+	}
+	
+	// Call SaveFS function to save the filesystem
+	err := filesystem.SaveFS(c.fs, c.fs.DiskName)
+	if err != nil {
+		fmt.Printf("Failed to save filesystem: %v\n", err)
+		return
+	}
+	
+	fmt.Println("File system successfully saved.")
 }

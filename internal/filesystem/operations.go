@@ -278,7 +278,7 @@ func ListFS(fs *FileSystem) ([]string, error) {
 
     return fileList, nil
 }
-// getFreeBlockCount, addToFNT, allocateBlockPointerTable, allocateDataBlock, writeBlock, updateBlockPointerTable, updateDABPT, SaveFs
+
 func PutFS(fs *FileSystem, externalFileName string) error {
     // Check if external file exists
     if _, err := os.Stat(externalFileName); os.IsNotExist(err) {
@@ -293,6 +293,7 @@ func PutFS(fs *FileSystem, externalFileName string) error {
     defer externalFile.Close()
 
 
+    // Get file info
     fileInfo, err := externalFile.Stat()
     if err != nil {
         return fmt.Errorf("failed to get external file stats: %v", err)
@@ -300,6 +301,7 @@ func PutFS(fs *FileSystem, externalFileName string) error {
 
     // Validate available space in FS
     fileSize := fileInfo.Size()
+    fmt.Printf("File size: %d bytes\n", fileSize) // Debugging
     if fileSize == 0 {
         return fmt.Errorf("cannot add empty file")
     }
@@ -336,23 +338,31 @@ func PutFS(fs *FileSystem, externalFileName string) error {
             return fmt.Errorf("failed to read external file: %v", err)
         }
         
+        // Allocate a data block for writing
         blockIndex, err := fs.allocateDataBlock()
         if err != nil {
             return fmt.Errorf("failed to allocate data block: %v", err)
         }
         
+        // Write the read data into the allocated block
         err = fs.writeBlock(blockIndex, buffer[:n])
         if err != nil {
             return fmt.Errorf("failed to write data block: %v", err)
         }
         
+        // Update the Block Pointer Table with this block index
         err = fs.updateBlockPointerTable(bptIndex, i, blockIndex)
         if err != nil {
             return fmt.Errorf("failed to update Block Pointer Table: %v", err)
         }
 
-        // Update FreeBlocks
+        // Mark this block as used
         fs.FreeBlocks[blockIndex] = false
+
+        // If this is the last read (EOF), break out of the loop
+        if n == BlockSize {
+            break
+        }
     }
 
     // Update DABPT
@@ -361,13 +371,33 @@ func PutFS(fs *FileSystem, externalFileName string) error {
         return fmt.Errorf("failed to update DABPT: %v", err)
     }
 
-    // Save updated filesystem state
-    err = SaveFS(fs, externalFileName)
+    // Save updated filesystem state (ensure this does not overwrite existing files incorrectly)
+    diskImageName := fs.DiskName // Ensure DiskName is set appropriately before saving
+    if diskImageName == "" {
+        return fmt.Errorf("disk name is not set; cannot save filesystem state")
+    }
+
+    err = SaveFS(fs, diskImageName)
     if err != nil {
         return fmt.Errorf("failed to save updated filesystem state: %v", err)
     }
-
     return nil
+}
+
+func RemoveFS(fs *FileSystem, internalFileName string) error {
+    // Check if file exists in FNT
+    for i, entry := range fs.FNT {
+        if entry.Filename == [MaxFilename]byte{} {
+            continue
+        }
+        filename := string(bytes.Trim(entry.Filename[:], "\x00"))
+        if filename == internalFileName {
+            // Remove file entry from FNT
+            fs.FNT[i] = FNTEntry{}
+            return nil
+        }
+    }
+    return fmt.Errorf("file not found in FNT")
 }
 
 // getFreeBlockCount returns the number of free blocks in the filesystem
