@@ -104,7 +104,14 @@ func (c *CLI) listFiles() {
 		return
 	}
 
-	for _, file := range fileList {
-		fmt.Println(file)
-	}
+    // Empty check
+
+    if len(fileList) != 0 {
+        for _, file := range fileList {
+            fmt.Println(file)
+        } 
+    } else {
+        fmt.Println("File system is empty!")
+    }
+	
 }
